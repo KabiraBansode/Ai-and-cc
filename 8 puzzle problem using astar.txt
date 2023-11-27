@@ -1,0 +1,176 @@
+import java.util.*;
+
+public class Main {
+
+    // State class represents the configuration of the puzzle
+    static class State {
+        int[][] board;  // 2D array representing the puzzle board
+        int cost;       // Total cost (g + h)
+        int g;           // Cost from the start state to the current state
+        int h;           // Heuristic cost (estimated cost to reach the goal state)
+        State parent;    // Reference to the parent state (used for backtracking)
+
+        // Constructor to initialize the state with a given puzzle board
+        State(int[][] board, int g, int h) {
+            this.board = board;
+            this.g = g;
+            this.h = h;
+            this.cost = g + h;
+        }
+
+        // Override hashCode and equals to use State as a key in HashSet
+        @Override
+        public int hashCode() {
+            return Arrays.deepHashCode(this.board);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            State state = (State) obj;
+            return Arrays.deepEquals(this.board, state.board);
+        }
+    }
+
+    // Represent the possible moves (up, down, left, right)
+    static final int[] moveRow = {-1, 1, 0, 0};
+    static final int[] moveCol = {0, 0, -1, 1};
+
+    // Check if a move is valid within the puzzle board boundaries
+    static boolean isValidMove(int row, int col) {
+        return row >= 0 && row < 3 && col >= 0 && col < 3;
+    }
+
+    // Swap two positions on the puzzle board
+    static void swap(int[][] board, int row1, int col1, int row2, int col2) {
+        int temp = board[row1][col1];
+        board[row1][col1] = board[row2][col2];
+        board[row2][col2] = temp;
+    }
+
+    // Solve the puzzle using A* algorithm
+    static void solvePuzzle(int[][] initial) {
+        State initialState = new State(initial, 0, calculateHeuristic(initial));
+        initialState.parent = null;
+
+        // Use PriorityQueue to prioritize states based on their total cost
+        PriorityQueue<State> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(s -> s.cost));
+        priorityQueue.add(initialState);
+
+        Set<State> visited = new HashSet<>();  // Keep track of visited states
+        visited.add(initialState);
+
+        while (!priorityQueue.isEmpty()) {
+            State current = priorityQueue.poll();  // Get the next state from the priority queue
+
+            if (isGoalState(current.board)) {
+                System.out.println("Puzzle Solved!");
+                printPath(current);  // Print the solution path
+                return;
+            }
+
+            // Find the position of the empty tile (0)
+            int emptyRow = -1, emptyCol = -1;
+            outerloop:
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (current.board[i][j] == 0) {
+                        emptyRow = i;
+                        emptyCol = j;
+                        break outerloop;
+                    }
+                }
+            }
+
+            // Generate possible next states by moving the empty tile
+            for (int i = 0; i < 4; i++) {
+                int newRow = emptyRow + moveRow[i];
+                int newCol = emptyCol + moveCol[i];
+
+                if (isValidMove(newRow, newCol)) {
+                    int[][] newBoard = new int[3][3];
+                    for (int x = 0; x < 3; x++) {
+                        System.arraycopy(current.board[x], 0, newBoard[x], 0, 3);
+                    }
+                    swap(newBoard, emptyRow, emptyCol, newRow, newCol);
+
+                    int newG = current.g + 1;  // Increment the cost from the start state
+                    int newH = calculateHeuristic(newBoard);
+                    State newState = new State(newBoard, newG, newH);
+                    newState.parent = current;  // Set the parent of the new state
+
+                    if (!visited.contains(newState)) {
+                        priorityQueue.add(newState);
+                        visited.add(newState);
+                    }
+                }
+            }
+        }
+
+        System.out.println("No solution found!");
+    }
+
+    // Check if the current state is the goal state
+    static boolean isGoalState(int[][] board) {
+        int num = 1;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] != num % 9) {
+                    return false;
+                }
+                num++;
+            }
+        }
+        return true;
+    }
+
+    // Calculate the heuristic cost (number of misplaced tiles)
+    static int calculateHeuristic(int[][] board) {
+        int count = 0;
+        int num = 1;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] != 0 && board[i][j] != num % 9) {
+                    count++;
+                }
+                num++;
+            }
+        }
+        return count;
+    }
+
+    // Print the path from the initial state to the goal state
+    static void printPath(State state) {
+        System.out.println("Moves to reach the solution:");
+        while (state != null) {
+            printBoard(state.board);
+            System.out.println();
+            state = state.parent;
+        }
+    }
+
+    // Print the current state of the puzzle board
+    static void printBoard(int[][] board) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                System.out.print(board[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    // Entry point of the program
+    public static void main(String[] args) {
+        // Define the initial state of the puzzle
+        int[][] initial = {
+                {1, 2, 3},
+                {4, 5, 6},
+                {0, 7, 8}
+        };
+
+        // Solve the puzzle using A* algorithm
+        solvePuzzle(initial);
+    }
+}
+
