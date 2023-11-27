@@ -1,0 +1,161 @@
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+class PuzzleNode {
+    int[][] state;
+    PuzzleNode parent;
+    String action;
+
+    public PuzzleNode(int[][] state, PuzzleNode parent, String action) {
+        this.state = state;
+        this.parent = parent;
+        this.action = action;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        int[][] initialState = {
+            {1, 2, 3},
+            {4, 0, 6},
+            {7, 5, 8}
+        };
+
+        int[][] goalState = {
+            {1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 0}
+        };
+
+        iterativeDeepeningDFS(initialState, goalState);
+    }
+
+    private static void iterativeDeepeningDFS(int[][] initialState, int[][] goalState) {
+        int maxDepth = 30; // Adjust the maximum depth as needed
+        for (int depth = 0; depth <= maxDepth; depth++) {
+            if (dfs(initialState, goalState, depth)) {
+                return;
+            }
+        }
+        System.out.println("Goal state not reachable within the specified depth limit.");
+    }
+
+    private static boolean dfs(int[][] initialState, int[][] goalState, int maxDepth) {
+        Deque<PuzzleNode> stack = new ArrayDeque<>();
+        stack.push(new PuzzleNode(initialState, null, null));
+
+        while (!stack.isEmpty()) {
+            PuzzleNode currentNode = stack.pop();
+
+            if (isGoalState(currentNode.state, goalState)) {
+                System.out.println("Goal state reached!");
+                printSolution(currentNode);
+                return true;
+            }
+
+            if (currentNode.parent == null || currentNode.parent.parent == null) {
+                // Ignore moves that would lead to the same state within the last two moves
+                int[] blankPosition = findBlank(currentNode.state);
+                int[][] moves = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                for (int[] move : moves) {
+                    int newI = blankPosition[0] + move[0];
+                    int newJ = blankPosition[1] + move[1];
+
+                    if (isValidMove(newI, newJ)) {
+                        int[][] newState = applyMove(currentNode.state, blankPosition, move);
+                        PuzzleNode newNode = new PuzzleNode(newState, currentNode, moveToString(move));
+                        stack.push(newNode);
+                    }
+                }
+            }
+
+            if (currentNode.parent == null || currentNode.parent.parent == null || currentNode.parent.parent.parent == null) {
+                // Ignore moves that would lead to the same state within the last three moves
+                // Add more conditions if needed
+            }
+
+            if (currentNode.parent == null || currentNode.parent.parent == null || currentNode.parent.parent.parent == null || currentNode.parent.parent.parent.parent == null) {
+                // Ignore moves that would lead to the same state within the last four moves
+                // Add more conditions if needed
+            }
+
+            // Add more conditions for ignoring repeated moves as needed
+        }
+
+        return false;
+    }
+
+    private static boolean isGoalState(int[][] currentState, int[][] goalState) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (currentState[i][j] != goalState[i][j]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static int[] findBlank(int[][] state) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (state[i][j] == 0) {
+                    return new int[]{i, j};
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean isValidMove(int i, int j) {
+        return i >= 0 && i < 3 && j >= 0 && j < 3;
+    }
+
+    private static int[][] applyMove(int[][] currentState, int[] blankPosition, int[] move) {
+        int[][] newState = new int[3][3];
+
+        for (int i = 0; i < 3; i++) {
+            System.arraycopy(currentState[i], 0, newState[i], 0, 3);
+        }
+
+        int newI = blankPosition[0] + move[0];
+        int newJ = blankPosition[1] + move[1];
+
+        newState[blankPosition[0]][blankPosition[1]] = newState[newI][newJ];
+        newState[newI][newJ] = 0;
+
+        return newState;
+    }
+
+    private static String moveToString(int[] move) {
+        if (move[0] == -1) {
+            return "up";
+        } else if (move[0] == 1) {
+            return "down";
+        } else if (move[1] == -1) {
+            return "left";
+        } else if (move[1] == 1) {
+            return "right";
+        } else {
+            return "invalid move";
+        }
+    }
+
+    private static void printSolution(PuzzleNode node) {
+        if (node.parent != null) {
+            printSolution(node.parent);
+            System.out.println("Move " + node.action);
+            printState(node.state);
+            System.out.println();
+        }
+    }
+
+    private static void printState(int[][] state) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                System.out.print(state[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+}
